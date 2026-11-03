@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>SensivApp - Diário de Sintomas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h2>SensivApp - Diário de Sintomas</h2>
+    <form id="formSintoma">
+        <label for="intensidade">Intensidade do Sintoma:</label>
+        <select id="intensidade" required>
+            <option value="Leve">Leve</option>
+            <option value="Moderado">Moderado</option>
+            <option value="Intenso">Intenso</option>
+        </select>
+
+        <label for="descricao">Descrição / Detalhes:</label>
+        <textarea id="descricao" rows="3" placeholder="Como você está se sentindo hoje?" required></textarea>
+
+        <button type="submit">Salvar Registro</button>
+    </form>
+
+    <h3>Registros Salvos no Banco:</h3>
+    <div id="listaSintomas">Carregando...</div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8000";
+
+    function getDotClass(intensidade) {
+        const val = intensidade.toLowerCase();
+        if (val.includes('leve')) return 'dot-leve';
+        if (val.includes('moderado')) return 'dot-moderado';
+        if (val.includes('intenso')) return 'dot-intenso';
+        return 'dot-leve';
+    }
+
+    async function carregarSintomas() {
+        try {
+            const res = await fetch(`${API_URL}/sintomas/`);
+            const data = await res.json();
+            const div = document.getElementById("listaSintomas");
+            if (data.length === 0) {
+                div.innerHTML = "<p>Nenhum registro encontrado.</p>";
+                return;
+            }
+            div.innerHTML = data.map(s => `
+                <div class="sintoma-item">
+                    <div class="badge-container">
+                        <span class="dot ${getDotClass(s.intensidade)}"></span>
+                        <span><strong>Intensidade:</strong> ${s.intensidade}</span>
+                    </div><br>
+                    <span style="display: block; margin-top: 6px;"><strong>Descrição:</strong> ${s.descricao}</span>
+                </div>
+            `).join("");
+        } catch (e) {
+            document.getElementById("listaSintomas").innerHTML = "<p style='color:#ff6961;'>Erro ao conectar com a API.</p>";
+        }
+    }
+
+    document.getElementById("formSintoma").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const intensidade = document.getElementById("intensidade").value;
+        const descricao = document.getElementById("descricao").value;
+
+        await fetch(`${API_URL}/sintomas/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ intensidade, descricao })
+        });
+
+        document.getElementById("descricao").value = "";
+        carregarSintomas();
+    });
+
+    carregarSintomas();
+</script>
+</body>
+</html>

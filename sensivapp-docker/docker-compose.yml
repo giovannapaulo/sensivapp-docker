@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  db:
+    build: ./db
+    container_name: sensiv_db
+    environment:
+      POSTGRES_USER: sensiv
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sensivapp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - sensiv_net
+
+  api:
+    build: ./api
+    container_name: sensiv_api
+    environment:
+      - DATABASE_URL=postgresql://sensiv:password@db:5432/sensivapp_db
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+    networks:
+      - sensiv_net
+
+  frontend:
+    build: ./frontend
+    container_name: sensiv_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    networks:
+      - sensiv_net
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    container_name: sensiv_visualizer
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - sensiv_net
+
+volumes:
+  pgdata:
+
+networks:
+  sensiv_net:
+    driver: overlay
