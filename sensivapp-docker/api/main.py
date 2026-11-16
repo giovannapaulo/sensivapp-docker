@@ -20,8 +20,17 @@ class SintomaModel(Base):
     intensidade = Column(String(50), nullable=False)
     descricao = Column(Text, nullable=True)
 
-Base.metadata.create_all(bind=engine)
-
+for tentativa in range(15):
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Conexão com o banco estabelecida!")
+        break
+    except Exception as erro:
+        print(f"Banco ainda não está disponível: {erro}")
+        time.sleep(3)
+else:
+    raise Exception("Não foi possível conectar ao banco de dados.")
+    
 app = FastAPI(title="SensivApp - Diário de Sintomas API")
 
 app.add_middleware(
