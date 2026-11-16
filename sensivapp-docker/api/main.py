@@ -71,3 +71,10 @@ def criar_sintoma(sintoma: SintomaSchema, db: Session = Depends(get_db)):
 @app.get("/sintomas/")
 def listar_sintomas(db: Session = Depends(get_db)):
     return db.query(SintomaModel).all()
+
+@app.get("/instancia")
+def identificar_instancia():
+    return {
+        "servico": "SensivApp API",
+        "container": socket.gethostname()
+    }
